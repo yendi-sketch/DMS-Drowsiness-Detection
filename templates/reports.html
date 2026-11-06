@@ -1,175 +1,467 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - Drowsiness Detection</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header { background: white; padding: 20px 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        h1 { color: #333; display: flex; align-items: center; gap: 10px; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        h1 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .nav-links { display: flex; gap: 15px; }
-        .nav-links a { padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; transition: 0.3s; }
+
+        .nav-links a {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
         .nav-links a:hover { background: #5568d3; }
-        .filter-section, .report-section { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
-        .filter-group { display: flex; flex-direction: column; }
-        label { margin-bottom: 5px; color: #555; font-weight: 500; font-size: 14px; }
-        input, select { padding: 10px; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 14px; }
-        .filter-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; color: white; transition: 0.3s; }
-        .btn-primary { background: #667eea; } .btn-success { background: #48bb78; } .btn-secondary { background: #718096; }
+
+        .filter-section, .report-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input, select {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            transition: 0.3s;
+        }
+
+        .btn-primary { background: #667eea; }
+        .btn-success { background: #48bb78; }
+        .btn-secondary { background: #718096; }
+
         .btn:hover { opacity: 0.9; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; border-bottom: 1px solid #e0e0e0; text-align: left; font-size: 14px; }
-        th { background: #667eea; color: white; }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            min-width: 1100px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: left;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            white-space: nowrap;
+        }
+
+        tr:hover td {
+            background: #f7f7ff;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
         .status-drowsy { background: #fed7d7; color: #742a2a; }
         .status-yawning { background: #feebc8; color: #7c2d12; }
-        .empty-state { text-align: center; padding: 40px; color: #999; }
+
+        .evidence {
+            width: 120px;
+            height: 75px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .no-image {
+            color: #999;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .info {
+            margin-top: 10px;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #667eea;
+        }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📋 Drowsiness Detection Reports</h1>
-            <div class="nav-links">
-                <a href="/">Dashboard</a>
-                <a href="/admin">Drivers</a>
-            </div>
-        </div>
+<div class="container">
 
-        <div class="filter-section">
-            <h2>🔍 Filter Reports</h2>
-            <div class="filter-grid">
-                <div class="filter-group">
-                    <label for="start_date">Start Date</label>
-                    <input type="date" id="start_date">
-                </div>
-                <div class="filter-group">
-                    <label for="end_date">End Date</label>
-                    <input type="date" id="end_date">
-                </div>
-                <div class="filter-group">
-                    <label for="driver_filter">Driver</label>
-                    <select id="driver_filter">
-                        <option value="">All Drivers</option>
-                    </select>
-                </div>
-            </div>
-            <div class="filter-actions">
-                <button class="btn btn-primary" onclick="loadReports()">🔍 Apply Filter</button>
-                <button class="btn btn-secondary" onclick="resetFilters()">↻ Reset</button>
-                <button class="btn btn-success" onclick="exportReport()">📥 Export to CSV</button>
-            </div>
-        </div>
+    <div class="header">
+        <h1>📋 Drowsiness Detection Reports</h1>
 
-        <div class="report-section">
-            <h2 id="reportCount">Detection Reports</h2>
-            <div style="overflow-x:auto;">
-                <table id="reportsTable">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Driver Name</th>
-                            <th>Employee ID</th>
-                            <th>Vehicle</th>
-                            <th>Status</th>
-                            <th>Confidence</th>
-                            <th>Alert Time</th>
-                            <th>Phone</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportsBody">
-                        <tr><td colspan="8" style="text-align:center;">Loading reports...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/admin">Drivers</a>
         </div>
     </div>
 
-    <script>
-        // Set default dates (7 days back)
-        function setDefaultDates() {
-            const end = new Date();
-            const start = new Date();
-            start.setDate(start.getDate() - 7);
-            document.getElementById('end_date').valueAsDate = end;
-            document.getElementById('start_date').valueAsDate = start;
+    <div class="filter-section">
+        <h2>🔍 Filter Reports</h2>
+
+        <div class="filter-grid">
+            <div class="filter-group">
+                <label for="start_date">Start Date</label>
+                <input type="date" id="start_date">
+            </div>
+
+            <div class="filter-group">
+                <label for="end_date">End Date</label>
+                <input type="date" id="end_date">
+            </div>
+
+            <div class="filter-group">
+                <label for="driver_filter">Driver</label>
+                <select id="driver_filter">
+                    <option value="">All Drivers</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button class="btn btn-primary" onclick="loadReports()">
+                🔍 Apply Filter
+            </button>
+
+            <button class="btn btn-secondary" onclick="resetFilters()">
+                ↻ Reset
+            </button>
+
+            <button class="btn btn-success" onclick="exportReport()">
+                📥 Export to Excel
+            </button>
+        </div>
+
+        <div class="info">
+            Report menggunakan pencatatan event-based. Data NORMAL tidak disimpan
+            dan tidak ditampilkan pada laporan produksi.
+        </div>
+    </div>
+
+    <div class="report-section">
+        <h2 id="reportCount">Detection Reports</h2>
+
+        <div class="table-wrapper">
+            <table id="reportsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nama</th>
+                        <th>Employee ID</th>
+                        <th>ESP32 ID</th>
+                        <th>Hasil Deteksi</th>
+                        <th>Timestamp</th>
+                        <th>EAR</th>
+                        <th>MAR</th>
+                        <th>Matching</th>
+                        <th>Bukti Gambar</th>
+                    </tr>
+                </thead>
+
+                <tbody id="reportsBody">
+                    <tr>
+                        <td colspan="11" class="loading">Loading reports...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    function formatNumber(value, digits) {
+        const n = Number(value);
+        return Number.isFinite(n) ? n.toFixed(digits) : '-';
+    }
+
+    function formatTimestamp(value) {
+        if (!value) return '-';
+
+        const date = new Date(value.replace(' ', 'T'));
+
+        if (Number.isNaN(date.getTime())) {
+            return escapeHtml(value);
         }
 
-        async function loadDrivers() {
-            try {
-                const res = await fetch('/api/drivers');
-                const data = await res.json();
-                const select = document.getElementById('driver_filter');
-                data.drivers.forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d.id;
-                    opt.textContent = `${d.driver_name} (${d.employee_id})`;
-                    select.appendChild(opt);
-                });
-            } catch (e) { console.error(e); }
+        return date.toLocaleString('id-ID');
+    }
+
+    function setDefaultDates() {
+        const end = new Date();
+        const start = new Date();
+
+        start.setDate(start.getDate() - 7);
+
+        document.getElementById('end_date').valueAsDate = end;
+        document.getElementById('start_date').valueAsDate = start;
+    }
+
+    async function loadDrivers() {
+        try {
+            const res = await fetch('/api/drivers');
+            const data = await res.json();
+
+            const select = document.getElementById('driver_filter');
+
+            select.innerHTML = '<option value="">All Drivers</option>';
+
+            (data.drivers || []).forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id;
+                opt.textContent = `${d.driver_name} (${d.employee_id || '-'})`;
+                select.appendChild(opt);
+            });
+
+        } catch (e) {
+            console.error('Gagal memuat driver:', e);
+        }
+    }
+
+    async function loadReports() {
+        const start = document.getElementById('start_date').value;
+        const end = document.getElementById('end_date').value;
+        const driver = document.getElementById('driver_filter').value;
+
+        let url = `/api/reports?start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}`;
+
+        if (driver) {
+            url += `&driver_id=${encodeURIComponent(driver)}`;
         }
 
-        async function loadReports() {
-            const start = document.getElementById('start_date').value;
-            const end = document.getElementById('end_date').value;
-            const driver = document.getElementById('driver_filter').value;
-            
-            let url = `/api/reports?start_date=${start}&end_date=${end}`;
-            if(driver) url += `&driver_id=${driver}`;
+        const tbody = document.getElementById('reportsBody');
 
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                const tbody = document.getElementById('reportsBody');
-                
-                document.getElementById('reportCount').innerText = `Detection Reports (Total: ${data.reports.length})`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="11" class="loading">Memuat data...</td>
+            </tr>
+        `;
 
-                if(data.reports.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No reports found.</td></tr>`;
-                    return;
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+
+            const reports = data.reports || [];
+
+            document.getElementById('reportCount').innerText =
+                `Detection Reports (Total: ${reports.length})`;
+
+            if (reports.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="empty-state">
+                            No reports found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = reports.map(r => {
+                const status = r.status || '-';
+                const statusClass =
+                    status === 'DROWSY'
+                        ? 'status-drowsy'
+                        : 'status-yawning';
+
+                const matching = Number(r.matching_score);
+
+                const matchingText = Number.isFinite(matching)
+                    ? `${(matching * 100).toFixed(2)}%`
+                    : '-';
+
+                let evidence = '<span class="no-image">Tidak ada gambar</span>';
+
+                if (r.image_url) {
+                    const safeUrl = encodeURI(r.image_url);
+
+                    evidence = `
+                        <a href="${safeUrl}" target="_blank">
+                            <img
+                                class="evidence"
+                                src="${safeUrl}"
+                                alt="Bukti deteksi"
+                                loading="lazy"
+                            >
+                        </a>
+                    `;
                 }
 
-                tbody.innerHTML = data.reports.map(r => {
-                    const statusClass = r.status === 'DROWSY' ? 'status-drowsy' : 'status-yawning';
-                    return `
-                        <tr>
-                            <td>${r.id}</td>
-                            <td><strong>${r.driver_name || 'Unknown'}</strong></td>
-                            <td>${r.employee_id || '-'}</td>
-                            <td>${r.vehicle_number || 'Unknown'}</td>
-                            <td><span class="status-badge ${statusClass}">${r.status}</span></td>
-                            <td>${(r.confidence * 100).toFixed(1)}%</td>
-                            <td>${new Date(r.alert_time).toLocaleString()}</td>
-                            <td>${r.phone || '-'}</td>
-                        </tr>
-                    `;
-                }).join('');
-            } catch (e) { console.error(e); }
-        }
+                return `
+                    <tr>
+                        <td>${escapeHtml(r.id)}</td>
 
-        function resetFilters() {
-            setDefaultDates();
-            document.getElementById('driver_filter').value = "";
-            loadReports();
-        }
+                        <td>
+                            <strong>
+                                ${escapeHtml(r.driver_name || 'Unknown')}
+                            </strong>
+                        </td>
 
-        function exportReport() {
-            const start = document.getElementById('start_date').value;
-            const end = document.getElementById('end_date').value;
-            const driver = document.getElementById('driver_filter').value;
-            let url = `/api/reports/export?start_date=${start}&end_date=${end}`;
-            if(driver) url += `&driver_id=${driver}`;
-            window.location.href = url;
-        }
+                        <td>${escapeHtml(r.employee_id || '-')}</td>
 
+                        <td>${escapeHtml(r.esp32_id || '-')}</td>
+
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                ${escapeHtml(status)}
+                            </span>
+                        </td>
+
+                        <td>${formatTimestamp(r.created_at)}</td>
+
+                        <td>${formatNumber(r.eye_aspect_ratio, 4)}</td>
+
+                        <td>${formatNumber(r.mouth_aspect_ratio, 4)}</td>
+
+                        <td>${matchingText}</td>
+
+                        <td>${evidence}</td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (e) {
+            console.error('Gagal memuat report:', e);
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" class="empty-state">
+                        Gagal memuat data report.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function resetFilters() {
         setDefaultDates();
-        loadDrivers();
+        document.getElementById('driver_filter').value = "";
         loadReports();
-    </script>
+    }
+
+    function exportReport() {
+        const start = document.getElementById('start_date').value;
+        const end = document.getElementById('end_date').value;
+        const driver = document.getElementById('driver_filter').value;
+
+        let url =
+            `/api/reports/export?start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}`;
+
+        if (driver) {
+            url += `&driver_id=${encodeURIComponent(driver)}`;
+        }
+
+        window.location.href = url;
+    }
+
+    setDefaultDates();
+    loadDrivers();
+    loadReports();
+</script>
+
 </body>
 </html>

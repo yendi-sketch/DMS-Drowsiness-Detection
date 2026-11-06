@@ -6,6 +6,8 @@
 #include "base64.h"
 #include <WebServer.h>
 #include <WiFiClient.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 // ================== DEBUG SETTINGS ==================
 #define DEBUG_SERIAL true          // Enable serial debug
@@ -14,12 +16,12 @@
 #define DEBUG_WIFI true            // Enable WiFi debug
 
 // ================== WIFI ==================
-const char* ssid = "AGAMBERKAH";
-const char* password = "ayampecak";
+const char* ssid = "Galaxy A17 5G CABf";
+const char* password = "11112222";
 
 // ================== SERVER VPS CONFIG ==================
 // Masukkan IP dan Port VPS di sini (Tanpa http://)
-const char* serverHost = "192.168.1.176";
+const char* serverHost = "10.41.151.89";
 const int serverPort = 7001;
 
 // Endpoint paths
@@ -35,25 +37,27 @@ String getVpsUrl() {
 // ================== WEBSERVER FOR LOCAL CONTROL ==================
 WebServer localServer(80);
 
-// ================== CAMERA PIN (AI THINKER) ==================
-#define PWDN_GPIO_NUM     32
+// ================== CAMERA PIN (ESP32-S3-CAM OV5640) ==================
+#define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    -1
-#define XCLK_GPIO_NUM      0
-#define SIOD_GPIO_NUM     26
-#define SIOC_GPIO_NUM     27
-#define Y9_GPIO_NUM       35
-#define Y8_GPIO_NUM       34
-#define Y7_GPIO_NUM       39
-#define Y6_GPIO_NUM       36
-#define Y5_GPIO_NUM       21
-#define Y4_GPIO_NUM       19
-#define Y3_GPIO_NUM       18
-#define Y2_GPIO_NUM        5
-#define VSYNC_GPIO_NUM    25
-#define HREF_GPIO_NUM     23
-#define PCLK_GPIO_NUM     22
+#define XCLK_GPIO_NUM      15
+#define SIOD_GPIO_NUM      4
+#define SIOC_GPIO_NUM      5
 
-#define LED_FLASH 4
+#define Y9_GPIO_NUM        16
+#define Y8_GPIO_NUM        17
+#define Y7_GPIO_NUM        18
+#define Y6_GPIO_NUM        12
+#define Y5_GPIO_NUM        10
+#define Y4_GPIO_NUM        8
+#define Y3_GPIO_NUM        9
+#define Y2_GPIO_NUM        11
+
+#define VSYNC_GPIO_NUM     6
+#define HREF_GPIO_NUM      7
+#define PCLK_GPIO_NUM      13
+
+#define LED_FLASH          -1
 
 // ================== GLOBAL VARIABLES ==================
 bool isDrowsy = false;
@@ -64,10 +68,14 @@ String esp32Id = "ESP32-CAM-001";
 unsigned long lastDetection = 0;
 unsigned long lastStreamFrame = 0;
 unsigned long lastStatusUpdate = 0;
-const unsigned long DETECTION_INTERVAL = 3000;    // 3 detik
+unsigned long detectionCycleId = 0;
+const unsigned long DETECTION_INTERVAL = 1000;    // 1 detik
 const unsigned long STREAM_INTERVAL = 200;        // 5 FPS (200ms)
 const unsigned long STATUS_INTERVAL = 5000;       // 5 detik status update
 bool isStreaming = true;
+
+// ================== CAMERA MUTEX ==================
+SemaphoreHandle_t cameraMutex = NULL;
 
 // Statistics
 unsigned long streamFrameCount = 0;
@@ -75,10 +83,12 @@ unsigned long detectionCount = 0;
 unsigned long streamBytesSent = 0;
 unsigned long streamErrors = 0;
 unsigned long detectionErrors = 0;
+unsigned long fpsWindowStart = 0;
+unsigned long framesInCurrentWindow = 0;
 
 // ================== CAMERA CONFIG ==================
 camera_config_t camera_config = {
-  .pin_pwdn = PWDN_GPIO_NUM,
+  .pin_pwdn = -1, // Bypass driver PWDN handling to prevent power-cycle bugs
   .pin_reset = RESET_GPIO_NUM,
   .pin_xclk = XCLK_GPIO_NUM,
   .pin_sccb_sda = SIOD_GPIO_NUM,
@@ -94,13 +104,14 @@ camera_config_t camera_config = {
   .pin_vsync = VSYNC_GPIO_NUM,
   .pin_href = HREF_GPIO_NUM,
   .pin_pclk = PCLK_GPIO_NUM,
-  .xclk_freq_hz = 20000000,
+  .xclk_freq_hz = 10000000, // Reduced from 20MHz to 10MHz for better stability
   .ledc_timer = LEDC_TIMER_0,
   .ledc_channel = LEDC_CHANNEL_0,
   .pixel_format = PIXFORMAT_JPEG,
-  .frame_size = FRAMESIZE_VGA,
+  .frame_size = FRAMESIZE_QVGA,
   .jpeg_quality = 12,
-  .fb_count = 2
+  .fb_count = 1,
+  .fb_location = CAMERA_FB_IN_DRAM
 };
 
 // ================== FUNCTION PROTOTYPES ==================
@@ -119,6 +130,27 @@ void handleDebug();
 void handleStats();
 void sendFrameToVPS();
 void sendDetectionToVPS();
+void sendPerformanceMetric(
+    const char* metricType,
+    unsigned long durationMs,
+    unsigned long frames,
+    float fps,
+    unsigned long requestId = 0);
+void detectionTask(void *parameter){
+    // Tunggu dulu agar sistem dan stream sempat berjalan
+    vTaskDelay(pdMS_TO_TICKS(DETECTION_INTERVAL));
+
+    while (true) {
+        if (DEBUG_DETECTION) {
+            debugPrint("🔍 ");
+        }
+
+        sendDetectionToVPS();
+
+        // Tunggu 5 detik sebelum detection berikutnya
+        vTaskDelay(pdMS_TO_TICKS(DETECTION_INTERVAL));
+    }
+}
 void notifyDrowsyToVPS();
 void testVPSConnection();
 void printDebugInfo();
@@ -149,8 +181,8 @@ void setup() {
     Serial.begin(115200);
     delay(1000);
     
-    pinMode(LED_FLASH, OUTPUT);
-    digitalWrite(LED_FLASH, LOW);
+    // pinMode(LED_FLASH, OUTPUT);
+    // digitalWrite(LED_FLASH, LOW);
     
     debugPrintln("\n");
     debugPrintln("==================================================");
@@ -168,10 +200,31 @@ void setup() {
     
     // Connect to WiFi
     connectWiFi();
-    
+
+    // ULTRA-SAFE CAMERA BOOT
+    // 1. Manually power up the camera and keep it ON
+    delay(500); // Give the sensor time to stabilize
+
+    // 2. Force a very safe configuration to isolate hardware issues
+    camera_config.frame_size = FRAMESIZE_VGA;
+    camera_config.jpeg_quality = 12;
+    camera_config.fb_count = 1;
+
+    Serial.printf("PSRAM detected: %s\n", psramFound() ? "YES" : "NO");
+    Serial.printf("PSRAM size: %u bytes\n", ESP.getPsramSize());
+    // Check if PSRAM is available and update location
+    if (psramFound()) {
+        camera_config.fb_location = CAMERA_FB_IN_PSRAM;
+        debugPrintln("\n[INFO] PSRAM found! Using PSRAM for frame buffer.");
+    } else {
+        camera_config.fb_location = CAMERA_FB_IN_DRAM;
+        debugPrintln("\n[WARNING] No PSRAM found! Using DRAM for frame buffer.");
+    }
+
     // Initialize camera
     debugPrintln("\n📷 Initializing camera...");
     esp_err_t camStatus = esp_camera_init(&camera_config);
+    delay(3000);
     if (camStatus != ESP_OK) {
         debugPrintf("❌ Camera initialization failed with error: 0x%x\n", camStatus);
         debugPrintln("Possible causes:");
@@ -183,13 +236,28 @@ void setup() {
             digitalWrite(LED_FLASH, !digitalRead(LED_FLASH));
         }
     }
-    
+    fpsWindowStart = millis();
     sensor_t *sensor = esp_camera_sensor_get();
-    debugPrintf("✅ Camera initialized successfully\n");
-    debugPrintf("   Resolution: %dx%d\n", 
-                sensor->status.framesize == FRAMESIZE_VGA ? 640 : 0,
-                sensor->status.framesize == FRAMESIZE_VGA ? 480 : 0);
-    debugPrintf("   Quality: %d\n", sensor->status.quality);
+    // Create camera mutex
+    cameraMutex = xSemaphoreCreateMutex();
+
+    if (cameraMutex == NULL) {
+        debugPrintln("❌ Failed to create camera mutex!");
+    } else {
+        debugPrintln("✅ Camera mutex created");
+    }
+    
+    // Explicitly set frame size and quality to ensure it takes effect
+    if (sensor) {
+        sensor->set_framesize(sensor, camera_config.frame_size);
+        sensor->set_quality(sensor, camera_config.jpeg_quality);
+        
+        debugPrintf("✅ Camera initialized successfully\n");
+        debugPrintf("   Resolution Enum: %d (Requested: %d)\n", sensor->status.framesize, camera_config.frame_size);
+        debugPrintf("   Quality: %d\n", sensor->status.quality);
+    } else {
+        debugPrintln("❌ Failed to get camera sensor pointer!");
+    }
     
     // Setup local web server routes
     debugPrintln("\n🌐 Setting up local web server...");
@@ -214,7 +282,17 @@ void setup() {
     
     // Print initial debug info
     printDebugInfo();
-    
+        xTaskCreatePinnedToCore(
+        detectionTask,
+        "DetectionTask",
+        16384,
+        NULL,
+        1,
+        NULL,
+        0
+    );
+
+    debugPrintln("✅ Detection task started on Core 0");
     debugPrintln("\n✅ System initialization complete!");
     debugPrintln("==================================================");
 }
@@ -224,19 +302,36 @@ void loop() {
     localServer.handleClient();
     
     unsigned long currentMillis = millis();
+
+    // ================= FPS PER 1 DETIK =================
+    if (currentMillis - fpsWindowStart >= 1000UL) {
+        float elapsedSeconds =
+            (currentMillis - fpsWindowStart) / 1000.0;
+
+        float fps = framesInCurrentWindow / elapsedSeconds;
+
+        sendPerformanceMetric(
+            "FPS",
+            currentMillis - fpsWindowStart,
+            framesInCurrentWindow,
+            fps,0
+        );
+
+        Serial.printf(
+            "FPS per 1 detik: %.2f | Frames terkirim: %lu\n",
+            fps,
+            framesInCurrentWindow
+        );
+
+        framesInCurrentWindow = 0;
+        fpsWindowStart = currentMillis;
+    }   
     
     // Send frame to VPS for streaming
     if (isStreaming && (currentMillis - lastStreamFrame >= STREAM_INTERVAL)) {
         if (DEBUG_STREAM) debugPrint("📤 ");
         sendFrameToVPS();
         lastStreamFrame = currentMillis;
-    }
-    
-    // Send detection to VPS
-    if (currentMillis - lastDetection >= DETECTION_INTERVAL) {
-        if (DEBUG_DETECTION) debugPrint("🔍 ");
-        sendDetectionToVPS();
-        lastDetection = currentMillis;
     }
     
     // Print periodic status update
@@ -246,103 +341,226 @@ void loop() {
     }
 }
 
-// ================== VPS FUNCTIONS ==================
+void sendPerformanceMetric(
+    const char* metricType,
+    unsigned long durationMs,
+    unsigned long frames,
+    float fps,
+    unsigned long requestId
+) {
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("Performance metric tidak terkirim: WiFi terputus");
+        return;
+    }
 
-// [PERBAIKAN UTAMA] Fungsi ini ditulis ulang total pakai WiFiClient langsung
+    HTTPClient http;
+    String url = getVpsUrl() + "/api/test/performance";
+
+    http.begin(url);
+    http.setTimeout(5000);
+    http.addHeader("Content-Type", "application/json");
+
+    DynamicJsonDocument doc(256);
+    doc["metric_type"] = metricType;
+    doc["duration_ms"] = durationMs;
+    doc["request_id"] = requestId;
+
+    if (strcmp(metricType, "FPS") == 0) {
+        doc["frames"] = frames;
+        doc["fps"] = fps;
+    }
+
+    String body;
+    serializeJson(doc, body);
+
+    int httpCode = http.POST(body);
+
+    Serial.printf(
+        "Performance metric %s: HTTP %d\n",
+        metricType,
+        httpCode
+    );
+
+    http.end();
+}
+
+// ================== VPS FUNCTIONS ==================  
+
 void sendFrameToVPS() {
-    unsigned long startTime = millis();
-    camera_fb_t *fb = esp_camera_fb_get();
-    
-    if (!fb) {
-        if (DEBUG_STREAM) debugPrintln("❌ Failed to capture frame for streaming");
+    unsigned long streamStart = millis();
+
+    // Ambil akses kamera
+    if (xSemaphoreTake(cameraMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        if (DEBUG_STREAM) {
+            debugPrintln("⚠️ Camera mutex timeout");
+        }
         streamErrors++;
         return;
     }
-    
-    if (fb->len > 0) {
-        // Gunakan WiFiClient murni untuk kontrol socket yang lebih baik
-        WiFiClient client;
-        
-        if (!client.connect(serverHost, serverPort)) {
-            if (DEBUG_STREAM) debugPrintln("❌ Connection to VPS failed");
-            streamErrors++;
-            esp_camera_fb_return(fb);
-            return;
+
+    // Ambil gambar
+    unsigned long captureStart = millis();
+    camera_fb_t *fb = esp_camera_fb_get();
+    unsigned long captureEnd = millis();
+
+    if (!fb) {
+        if (DEBUG_STREAM) {
+            debugPrintln("❌ Failed to capture frame for streaming");
         }
-
-        String path = String(streamPushEndpoint) + esp32Id;
-        String boundary = "ESP32CAM" + String(millis());
-        
-        String head = "--" + boundary + "\r\n";
-        head += "Content-Disposition: form-data; name=\"image\"; filename=\"frame.jpg\"\r\n";
-        head += "Content-Type: image/jpeg\r\n\r\n";
-        String tail = "\r\n--" + boundary + "--\r\n";
-
-        uint32_t imageLen = fb->len;
-        uint32_t extraLen = head.length() + tail.length();
-        uint32_t totalLen = imageLen + extraLen;
-
-        // Manual HTTP POST Request
-        client.print("POST " + path + " HTTP/1.1\r\n");
-        client.print("Host: " + String(serverHost) + ":" + String(serverPort) + "\r\n");
-        client.print("Connection: close\r\n");
-        client.print("Content-Type: multipart/form-data; boundary=" + boundary + "\r\n");
-        client.print("Content-Length: " + String(totalLen) + "\r\n");
-        client.print("\r\n"); // End of headers
-        
-        // Kirim Body
-        client.print(head);
-        
-        // Kirim Gambar (Chunking untuk stabilitas jika perlu, tapi write langsung biasanya oke)
-        // Kita kirim dalam buffer chunks kecil jika gambar besar, tapi write buffer esp32 biasanya handle ini.
-        client.write(fb->buf, fb->len);
-        
-        client.print(tail);
-
-        // Baca Response (Optional, timeout pendek biar gak blocking streaming)
-        unsigned long timeout = millis();
-        while (client.connected() && millis() - timeout < 2000) {
-            if (client.available()) {
-                String line = client.readStringUntil('\n');
-                if (line.indexOf("200 OK") != -1 || line.indexOf("frame_received") != -1) {
-                    // Sukses
-                    streamFrameCount++;
-                    streamBytesSent += fb->len;
-                    if (DEBUG_STREAM) debugPrintln("✅ OK");
-                }
-                break; // Gak perlu baca semua body, hemat waktu
-            }
-        }
-        
-        client.stop();
-
-    } else {
-        if (DEBUG_STREAM) debugPrintln("❌ Empty frame captured");
         streamErrors++;
+        xSemaphoreGive(cameraMutex);
+        return;
     }
-    
+
+    // Salin JPEG ke buffer terpisah
+    size_t imageLen = fb->len;
+    uint8_t *imageCopy = (uint8_t *)malloc(imageLen);
+
+    if (!imageCopy) {
+        if (DEBUG_STREAM) {
+            debugPrintln("❌ Failed to allocate stream image buffer");
+        }
+        esp_camera_fb_return(fb);
+        xSemaphoreGive(cameraMutex);
+        streamErrors++;
+        return;
+    }
+
+    memcpy(imageCopy, fb->buf, imageLen);
+
+    // PENTING: lepaskan kamera sebelum mengirim melalui jaringan
     esp_camera_fb_return(fb);
+    xSemaphoreGive(cameraMutex);
+
+    if (DEBUG_STREAM) {
+        debugPrintf(
+            "📷 Stream JPEG: %u bytes | Capture: %lu ms\n",
+            (unsigned int)imageLen,
+            captureEnd - captureStart
+        );
+    }
+
+    // Koneksi VPS dilakukan setelah kamera dilepas
+    WiFiClient client;
+    unsigned long connectStart = millis();
+
+    if (!client.connect(serverHost, serverPort)) {
+        if (DEBUG_STREAM) {
+            debugPrintln("❌ Connection to VPS failed");
+        }
+        free(imageCopy);
+        client.stop();
+        streamErrors++;
+        return;
+    }
+
+    unsigned long connectEnd = millis();
+
+    // Header multipart HTTP
+    String path = String(streamPushEndpoint) + esp32Id;
+    String boundary = "ESP32CAM" + String(millis());
+
+    String head = "--" + boundary + "\r\n";
+    head += "Content-Disposition: form-data; name=\"image\"; filename=\"frame.jpg\"\r\n";
+    head += "Content-Type: image/jpeg\r\n\r\n";
+
+    String tail = "\r\n--" + boundary + "--\r\n";
+
+    uint32_t totalLen = imageLen + head.length() + tail.length();
+
+    client.print("POST " + path + " HTTP/1.1\r\n");
+    client.print("Host: " + String(serverHost) + ":" +
+                 String(serverPort) + "\r\n");
+    client.print("Connection: close\r\n");
+    client.print("Content-Type: multipart/form-data; boundary=" +
+                 boundary + "\r\n");
+    client.print("Content-Length: " + String(totalLen) + "\r\n\r\n");
+
+    client.print(head);
+
+    unsigned long sendStart = millis();
+    size_t written = client.write(imageCopy, imageLen);
+    client.print(tail);
+    unsigned long sendEnd = millis();
+
+    free(imageCopy);
+
+    if (written != imageLen) {
+        if (DEBUG_STREAM) {
+            debugPrintln("❌ Incomplete stream image write");
+        }
+        streamErrors++;
+        client.stop();
+        return;
+    }
+
+    // Statistik streaming
+    streamFrameCount++;
+    framesInCurrentWindow++;
+    streamBytesSent += imageLen;
+
+    unsigned long totalTime = millis() - streamStart;
+
+    if (DEBUG_STREAM) {
+        debugPrintf(
+            "📤 Stream: Capture=%lu ms | Connect=%lu ms | Send=%lu ms | Total=%lu ms\n",
+            captureEnd - captureStart,
+            connectEnd - connectStart,
+            sendEnd - sendStart,
+            totalTime
+        );
+        debugPrintln("✅ OK");
+    }
+
+    client.stop();
 }
 
-void sendDetectionToVPS() {
-    unsigned long startTime = millis();
-    camera_fb_t *fb = esp_camera_fb_get();
-    
-    if (!fb) {
-        if (DEBUG_DETECTION) debugPrintln("❌ Failed to capture frame for detection");
+    void sendDetectionToVPS() {
+
+        // ================= CAMERA CAPTURE =================
+    unsigned long t_start = millis();
+
+    if (xSemaphoreTake(cameraMutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        Serial.println("⚠️ Camera mutex timeout - detection skipped");
         detectionErrors++;
         return;
     }
-    
-    if (DEBUG_DETECTION) debugPrintf("Sending detection #%lu (%d bytes)...\n", 
-                                    detectionCount + 1, fb->len);
+
+    camera_fb_t *fb = esp_camera_fb_get();
+
+        unsigned long t_capture = millis();
+
+        if (!fb) {
+            Serial.println("❌ Failed to capture frame for detection");
+            detectionErrors++;
+            xSemaphoreGive(cameraMutex);
+            return;
+        }
+
+        Serial.printf("📷 JPEG size: %u bytes\n", fb->len);
+
+        Serial.printf("⏱️ Camera capture time: %lu ms\n",
+                    t_capture - t_start);
     
     // Convert to base64
+    unsigned long t_base64_start = millis();
+
     String imageBase64 = base64::encode(fb->buf, fb->len);
+
+    unsigned long t_base64_end = millis();
+
+    Serial.printf("⏱️ Base64 encode time: %lu ms\n",
+                t_base64_end - t_base64_start);
     
+    esp_camera_fb_return(fb);
+    xSemaphoreGive(cameraMutex);
+    fb = nullptr;
+
     // Create JSON
-    DynamicJsonDocument doc(120000); // Buffer digedein dikit
+    unsigned long cycleId = ++detectionCycleId;
+    DynamicJsonDocument doc(120000);
     doc["esp32_id"] = esp32Id;
+    doc["request_id"] = cycleId;
     doc["image"] = imageBase64;
     
     String body;
@@ -362,8 +580,13 @@ void sendDetectionToVPS() {
     http.setTimeout(15000);
     http.addHeader("Content-Type", "application/json");
     
+    unsigned long t_post_start = millis();
     int code = http.POST(body);
-    unsigned long endTime = millis();
+    unsigned long t_post_end = millis();
+
+    Serial.printf("⏱️ HTTP POST time: %lu ms\n",
+        t_post_end - t_post_start
+    );
     
     if (code <= 0) {
         detectionErrors++;
@@ -372,16 +595,23 @@ void sendDetectionToVPS() {
                        http.errorToString(code).c_str(), code);
         }
         http.end();
-        esp_camera_fb_return(fb);
         return;
     }
     
     String response = http.getString();
+
+    unsigned long captureToResponseMs = millis() - t_start;
+
+    Serial.printf(
+        "⏱️ Capture-to-HTTP-response: %lu ms\n",
+        captureToResponseMs);
     http.end();
-    
+
+    sendPerformanceMetric("E2E",captureToResponseMs,0,0.0,cycleId);
+
     if (DEBUG_DETECTION) {
-        debugPrintf("✅ Detection sent in %lu ms, HTTP code: %d\n", 
-                   endTime - startTime, code);
+        debugPrintf("✅ Detection sent in %lu ms, HTTP code: %d\n",
+                t_post_end - t_post_start, code);
     }
     
     // Parse response
@@ -410,16 +640,8 @@ void sendDetectionToVPS() {
                 notifyDrowsyToVPS();
                 if (DEBUG_DETECTION) debugPrintln("🚨 DROWSINESS DETECTED! Alert sent to VPS!");
                 
-                // Flash LED pattern for drowsy
-                for (int i = 0; i < 5; i++) {
-                    digitalWrite(LED_FLASH, HIGH);
-                    delay(200);
-                    digitalWrite(LED_FLASH, LOW);
-                    delay(200);
-                }
             } else {
                 if (DEBUG_DETECTION) debugPrintln("✅ Driver is AWAKE");
-                digitalWrite(LED_FLASH, LOW);
             }
         }
         
@@ -432,8 +654,6 @@ void sendDetectionToVPS() {
                       ear, mar);
         }
     }
-    
-    esp_camera_fb_return(fb);
 }
 
 void notifyDrowsyToVPS() {
@@ -615,17 +835,22 @@ void handleStatus() {
     localServer.send(200, "application/json", response);
 }
 
-void handleCapture() {
-    camera_fb_t *fb = esp_camera_fb_get();
-    if (fb) {
-        sendDetectionToVPS();
-        esp_camera_fb_return(fb);
-        localServer.send(200, "text/plain", "Photo captured and sent to VPS for detection");
-    } else {
-        localServer.send(500, "text/plain", "Failed to capture photo");
-    }
-}
+// void handleCapture() {
+//     camera_fb_t *fb = esp_camera_fb_get();
+//     if (fb) {
+//         sendDetectionToVPS();
+//         esp_camera_fb_return(fb);
+//         localServer.send(200, "text/plain", "Photo captured and sent to VPS for detection");
+//     } else {
+//         localServer.send(500, "text/plain", "Failed to capture photo");
+//     }
+// }
 
+void handleCapture() {
+    sendDetectionToVPS();
+    localServer.send(200, "text/plain",
+                     "Photo captured and sent");
+}
 void handleLED() {
     static bool ledState = false;
     ledState = !ledState;

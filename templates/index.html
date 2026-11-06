@@ -5,619 +5,178 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Drowsiness Detection Dashboard</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        * {margin: 0;padding: 0;box-sizing: border-box;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;}
 
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: white;
-            padding: 20px 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 5px solid #667eea;
-        }
-
-        .header h1 {
-            color: #333;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 28px;
-        }
-
-        .header-logo {
-            font-size: 32px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 15px;
-        }
-
-        .nav-links a {
-            padding: 10px 25px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 15px;
-        }
-
-        .nav-links a:hover {
-            background: #5568d3;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
+        body {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);min-height: 100vh;padding: 20px;}
+        .container {max-width: 1400px;margin: 0 auto;}
+        .header {background: white;padding: 20px 30px;
+            border-radius: 15px;box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;display: flex;
+            justify-content: space-between;align-items: center;
+            border-left: 5px solid #667eea;}
+        .header h1 {color: #333;display: flex;align-items: center;gap: 12px;font-size: 28px;}
+        .header-logo {font-size: 32px;}
+        .nav-links {display: flex;gap: 15px;}
+        .nav-links a {padding: 10px 25px;background: #667eea;color: white;
+            text-decoration: none;border-radius: 8px;
+            transition: all 0.3s ease;font-weight: 500;
+            display: flex;align-items: center;gap: 8px;font-size: 15px;}
+        .nav-links a:hover {background: #5568d3;transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);}
 
         /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
-            margin-bottom: 35px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
+        .stats-grid {display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;width: 100%;}
+        .testing-metrics-grid {display: grid; grid-template-columns: repeat(5 minmax(0, 1fr));
+            gap: 15px; width: 100%;}
+        .testing-metrics-grid .stat-card {min-width: 0;padding: 15px;}
+        .stat-card {background: white;padding: 30px;border-radius: 15px;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 5px;
-            height: 100%;
-            background: #667eea;
-        }
-
-        .stat-icon {
-            font-size: 42px;
-            margin-bottom: 15px;
-            color: #667eea;
-        }
-
-        .stat-value {
-            font-size: 40px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
+            transition: all 0.3s ease;position: relative;overflow: hidden;}
+        .stat-card:hover {transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);}
+        .stat-card::before {content: '';position: absolute;top: 0;
+            left: 0;width: 5px;height: 100%;background: #667eea;}
+        .stat-icon {font-size: 42px;margin-bottom: 15px;color: #667eea;}
+        .stat-value {font-size: 40px;font-weight: 700;color: #333;margin-bottom: 8px;}
+        .stat-label {color: #666;font-size: 14px;text-transform: uppercase;
+            letter-spacing: 1px;font-weight: 600;}
 
         /* Stream Section */
-        .stream-section {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-        }
+        .stream-section {background: white;padding: 30px;
+            border-radius: 15px;box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);margin-bottom: 25px;}
+        .testing-control {width: 100%; grid-column: 1 / -1;}
+        .section-header {display: flex;justify-content: space-between;align-items: center;
+            margin-bottom: 25px;padding-bottom: 20px;border-bottom: 2px solid #f0f0f0;}
+        .section-header h2 {color: #333;font-size: 22px;display: flex;
+            align-items: center;gap: 10px;}
+        .live-indicator {display: flex;align-items: center;gap: 8px;
+            color: #48bb78;font-weight: 600;font-size: 14px;}
+        .pulse-dot {width: 12px;height: 12px;background: #48bb78;
+            border-radius: 50%;animation: pulse 1.5s infinite;}
 
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .section-header h2 {
-            color: #333;
-            font-size: 22px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #48bb78;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        .pulse-dot {
-            width: 12px;
-            height: 12px;
-            background: #48bb78;
-            border-radius: 50%;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.2); }
-        }
+        @keyframes pulse {0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }}
 
         /* Streams Grid */
-        .streams-grid {
-            display: grid;
+        .streams-grid {display: grid;
             grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-            gap: 25px;
-            margin-top: 20px;
-        }
-
-        .stream-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
+            gap: 25px;margin-top: 20px;}
+        .stream-card {background: white;border-radius: 12px;overflow: hidden;
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            border: 1px solid #eaeaea;
-        }
+            transition: all 0.3s ease;border: 1px solid #eaeaea;}
+        .stream-card:hover {transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);border-color: #667eea;}
+        .stream-header {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;padding: 18px;display: flex;
+            justify-content: space-between;align-items: center;}
+        .stream-header h3 {font-size: 18px;font-weight: 600;}
+        .status-badge {padding: 6px 15px;border-radius: 20px;font-size: 12px;
+            font-weight: 600;text-transform: uppercase;letter-spacing: 0.5px;}
+        .status-active {background: rgba(255, 255, 255, 0.2);color: white;}
+        .status-inactive {background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);}
+        .stream-video {width: 100%;height: 280px;background: #1a1a1a;display: flex;
+            align-items: center;justify-content: center;position: relative;}
+        .stream-video img { width: 100%;height: 100%;object-fit: cover;}
+        .stream-overlay {position: absolute;top: 10px;right: 10px;background: rgba(0, 0, 0, 0.7);
+            color: white;padding: 5px 10px;border-radius: 4px;font-size: 12px;font-weight: 500;}
+        .stream-info {padding: 20px;background: #f9fafc;}
+        .info-row {display: flex;justify-content: space-between;align-items: center;margin-bottom: 15px;}
+        .info-label {color: #666;font-size: 14px;font-weight: 500;}
+        .info-value {color: #333;font-size: 15px;font-weight: 600;}
+        .drowsy-alert {display: flex;align-items: center;gap: 8px;
+            padding: 8px 12px;background: #fff5f5;
+            border-radius: 8px;color: #c53030;font-weight: 600;}
+        .drowsy-dot {width: 10px;height: 10px;
+            background: #c53030;border-radius: 50%;animation: pulse 1s infinite;}
+        .stream-actions {padding: 20px;display: flex;gap: 12px;
+            background: #f9fafc;border-top: 1px solid #eaeaea;}
+        .btn {padding: 10px 20px;border: none;border-radius: 8px;font-size: 14px;font-weight: 500;
+            cursor: pointer;transition: all 0.3s ease;display: flex;align-items: center;gap: 8px;}
+        .btn-primary {background: #667eea;color: white;}
+        .btn-primary:hover {background: #5568d3;transform: translateY(-2px);}
+        .btn-secondary {background: #e2e8f0;color: #4a5568;}
+        .btn-secondary:hover {background: #cbd5e0;transform: translateY(-2px);}
 
-        .stream-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            border-color: #667eea;
-        }
-
-        .stream-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .stream-header h3 {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .status-badge {
-            padding: 6px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .status-active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
-
-        .status-inactive {
-            background: rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .stream-video {
-            width: 100%;
-            height: 280px;
-            background: #1a1a1a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .stream-video img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .stream-overlay {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .stream-info {
-            padding: 20px;
-            background: #f9fafc;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .info-label {
-            color: #666;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .info-value {
-            color: #333;
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        .drowsy-alert {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: #fff5f5;
-            border-radius: 8px;
-            color: #c53030;
-            font-weight: 600;
-        }
-
-        .drowsy-dot {
-            width: 10px;
-            height: 10px;
-            background: #c53030;
-            border-radius: 50%;
-            animation: pulse 1s infinite;
-        }
-
-        .stream-actions {
-            padding: 20px;
-            display: flex;
-            gap: 12px;
-            background: #f9fafc;
-            border-top: 1px solid #eaeaea;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-
-        .btn-secondary:hover {
-            background: #cbd5e0;
-            transform: translateY(-2px);
-        }
+        /* Driver Monitoring Information */
+        .driver-monitor-panel {padding: 20px;background: #f9fafc;border-top: 1px solid #eaeaea;}
+        .driver-monitor-title {font-size: 16px;font-weight: 700;color: #333;margin-bottom: 15px;}
+        .monitor-grid {display: grid;grid-template-columns: repeat(2, minmax(0, 1fr));gap: 10px;}
+        .monitor-item {background: white;border: 1px solid #eaeaea;border-radius: 8px;padding: 10px 12px;}
+        .monitor-label {display: block;color: #777;font-size: 12px;margin-bottom: 4px;}
+        .monitor-value {display: block;color: #333;font-size: 15px;font-weight: 700;}
+        .monitor-status-normal { color: #2f855a; }
+        .monitor-status-warning { color: #c05621; }
+        .monitor-status-critical { color: #c53030; }
 
         /* Alerts Section */
-        .alerts-section {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .filter-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .filter-controls {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .filter-select {
-            padding: 10px 15px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 14px;
-            background: white;
-            color: #333;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .filter-select:focus {
-            border-color: #667eea;
-        }
+        .alerts-section {background: white;padding: 30px;border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);}
+        .filter-bar {display: flex;justify-content: space-between;
+            align-items: center;margin-bottom: 25px;}
+        .filter-controls {display: flex;gap: 15px;align-items: center;}
+        .filter-select {padding: 10px 15px;border: 2px solid #e2e8f0;border-radius: 8px;
+            font-size: 14px;background: white;color: #333;outline: none;
+            transition: border-color 0.3s;}
+        .filter-select:focus {border-color: #667eea;}
 
         /* Alerts List */
-        .alerts-list {
-            max-height: 500px;
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-
-        .alerts-list::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .alerts-list::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 3px;
-        }
-
-        .alerts-list::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 3px;
-        }
-
-        .alert-item {
-            background: #f8fafc;
-            border-left: 4px solid #667eea;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .alert-item:hover {
-            background: #edf2f7;
-            transform: translateX(5px);
-        }
-
-        .alert-item.critical {
-            border-left-color: #f56565;
-            background: #fff5f5;
-        }
-
-        .alert-item.warning {
-            border-left-color: #ed8936;
-            background: #fffaf0;
-        }
-
-        .alert-icon {
-            font-size: 28px;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-            background: #667eea;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .alert-item.critical .alert-icon {
-            background: #f56565;
-        }
-
-        .alert-item.warning .alert-icon {
-            background: #ed8936;
-        }
-
-        .alert-content {
-            flex: 1;
-        }
-
-        .alert-driver {
-            font-size: 17px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .alert-details {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 8px;
-            display: flex;
-            gap: 20px;
-        }
-
-        .detail-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .alert-time {
-            color: #999;
-            font-size: 13px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .alerts-list {max-height: 500px;overflow-y: auto;padding-right: 10px;}
+        .alerts-list::-webkit-scrollbar {width: 6px;}
+        .alerts-list::-webkit-scrollbar-track {background: #f1f1f1;border-radius: 3px;}
+        .alerts-list::-webkit-scrollbar-thumb {background: #667eea;border-radius: 3px;}
+        .alert-item {background: #f8fafc;border-left: 4px solid #667eea;border-radius: 10px;
+            padding: 20px;margin-bottom: 15px;display: flex;align-items: center;
+            gap: 20px;transition: all 0.3s ease;}
+        .alert-item:hover {background: #edf2f7;transform: translateX(5px);}
+        .alert-item.critical {border-left-color: #f56565;background: #fff5f5;}
+        .alert-item.warning {border-left-color: #ed8936;background: #fffaf0;}
+        .alert-icon {font-size: 28px;width: 50px;height: 50px;display: flex;align-items: center;
+            justify-content: center;border-radius: 10px;background: #667eea;color: white;flex-shrink: 0;}
+        .alert-item.critical .alert-icon {background: #f56565;}
+        .alert-item.warning .alert-icon {background: #ed8936;}
+        .alert-content {flex: 1;}
+        .alert-driver {font-size: 17px;font-weight: 600;color: #333;margin-bottom: 6px;
+            display: flex;align-items: center;gap: 10px;}
+        .alert-details {color: #666;font-size: 14px;margin-bottom: 8px;display: flex;gap: 20px;}
+        .detail-item {display: flex;align-items: center;gap: 5px;}
+        .alert-time {color: #999;font-size: 13px;font-weight: 500;display: flex;align-items: center;gap: 5px;}
 
         /* Empty States */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #999;
-        }
-
-        .empty-state-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        .empty-state h3 {
-            font-size: 20px;
-            margin-bottom: 10px;
-            color: #666;
-        }
-
-        .empty-state p {
-            color: #888;
-            font-size: 14px;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
+        .empty-state {text-align: center;padding: 60px 20px;color: #999;}
+        .empty-state-icon {font-size: 64px;margin-bottom: 20px;opacity: 0.5;}
+        .empty-state h3 {font-size: 20px;margin-bottom: 10px;color: #666;}
+        .empty-state p {color: #888;font-size: 14px;max-width: 400px;margin: 0 auto;}
         /* Loading */
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .loading {text-align: center;padding: 60px 20px;color: #666;}
+        .loading-spinner {width: 50px;height: 50px;border: 4px solid #e2e8f0;border-top: 4px solid #667eea;
+            border-radius: 50%;animation: spin 1s linear infinite;margin: 0 auto 20px;}
+        @keyframes spin {0% { transform: rotate(0deg); }100% { transform: rotate(360deg); }}
 
         /* Responsive */
-        @media (max-width: 1200px) {
-            .streams-grid {
-                grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            }
-        }
-
-        @media (max-width: 992px) {
-            .header {
-                flex-direction: column;
-                gap: 20px;
-                text-align: center;
-            }
-            
-            .nav-links {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .streams-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
+        @media (max-width: 1200px) {.streams-grid {
+                grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));}}
+        @media (max-width: 1200px) {.testing-metrics-grid {grid-template-columns: repeat(3, 1fr);}}
         @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .filter-bar {
-                flex-direction: column;
-                gap: 15px;
-                align-items: stretch;
-            }
-            
-            .alert-item {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
-            }
-            
-            .alert-details {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .stream-actions {
-                flex-wrap: wrap;
-            }
-            
-            .btn {
-                flex: 1;
-                min-width: 120px;
-                justify-content: center;
-            }
-        }
+            .testing-metrics-grid {grid-template-columns: 1fr;}}
+        @media (max-width: 992px) {.header {flex-direction: column;
+                gap: 20px;text-align: center;}.nav-links {flex-wrap: wrap;justify-content: center;}
+            .stats-grid {grid-template-columns: repeat(2, 1fr);}
+            .streams-grid {grid-template-columns: 1fr;}}
+        @media (max-width: 768px) {.stats-grid {grid-template-columns: 1fr;}
+            .filter-bar {flex-direction: column;gap: 15px;align-items: stretch;}
+            .alert-item {flex-direction: column;text-align: center;gap: 15px;}
+            .alert-details {flex-direction: column;gap: 10px;}
+            .stream-actions {flex-wrap: wrap;}
+            .btn {flex: 1;min-width: 120px;justify-content: center;}}
 
         /* Connection Status */
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 15px;
-            background: #f8fafc;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
+        .connection-status {display: flex;align-items: center;gap: 10px;padding: 10px 15px;
+            background: #f8fafc;border-radius: 8px;margin-bottom: 20px;}
+        .status-item {display: flex;align-items: center;gap: 8px;font-size: 14px;color: #666;}
+        .status-dot {width: 8px;height: 8px;border-radius: 50%;}
         .status-online { background: #48bb78; }
         .status-offline { background: #a0aec0; }
         .status-error { background: #f56565; }
@@ -659,29 +218,64 @@
             </div>
         </div>
 
-        <!-- Statistics -->
-        <div class="stats-grid" id="stats">
-            <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div class="stat-value" id="totalDrivers">0</div>
-                <div class="stat-label">Total Drivers</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">🚨</div>
-                <div class="stat-value" id="alertsToday">0</div>
-                <div class="stat-label">Alerts Today</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📊</div>
-                <div class="stat-value" id="alertsWeek">0</div>
-                <div class="stat-label">Alerts This Week</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">⚠️</div>
-                <div class="stat-value" id="criticalToday">0</div>
-                <div class="stat-label">Critical Alerts Today</div>
-            </div>
+<!-- Testing Control -->
+<div class="stream-section testing-control" style="margin-bottom: 25px;">
+    <div class="section-header">
+        <h2>
+            <span>🧪</span>
+            Pengujian Sistem
+        </h2>
+        <div class="live-indicator">
+            <span class="pulse-dot"></span>
+            TESTING
         </div>
+    </div>
+
+    <!-- Mode Control -->
+    <div style="display: flex;align-items: center;gap: 15px;flex-wrap: wrap;margin-bottom: 25px;">
+        <label style="font-weight: 600;color: #333;">
+            Mode Pencatatan:
+        </label>
+        <select id="testMode" class="filter-select">
+            <option value="EVENT_BASED">Event-Based</option>
+            <option value="CONTINUOUS">Continuous</option>
+        </select>
+
+        <button class="btn btn-primary" onclick="changeTestMode()">
+            🔄 Terapkan Mode
+        </button>
+
+        <button class="btn btn-secondary" onclick="resetTestStats()">
+            🗑️ Reset Statistik
+        </button>
+
+        <span id="currentTestMode" style="font-weight: 600;color: #667eea;">
+            Mode: Loading...
+        </span>
+    </div>
+
+    <!-- Testing Metrics -->
+    <div class="testing-metrics-grid">
+
+    <div class="stats-grid" id="stats">
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value" id="totalDrivers">0</div>
+            <div class="stat-label">Total Drivers</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">🎞️</div>
+            <div class="stat-value" id="testFrames">0</div>
+            <div class="stat-label">Frames Diproses</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-value" id="testFPS">0.00</div>
+            <div class="stat-label">FPS</div>
+        </div>
+</div>
 
         <!-- Live Camera Streams -->
         <div class="stream-section">
@@ -743,6 +337,99 @@
         // Configuration
         const API_BASE_URL = window.location.origin; // Use current domain
         const REFRESH_INTERVAL = 10000; // 10 seconds
+
+// ================= TESTING SYSTEM =================
+async function loadTestStats() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/test/stats`);
+
+        if (!response.ok) {
+            throw new Error('Gagal mengambil statistik pengujian');
+        }
+
+        const data = await response.json();
+
+        document.getElementById('testFrames').textContent =
+            data.frames_processed ?? 0;
+
+        document.getElementById('testFPS').textContent =
+            Number(data.fps ?? 0).toFixed(2);
+
+        document.getElementById('currentTestMode').textContent =
+            `Mode: ${data.mode ?? '-'}`;
+
+        const modeSelect = document.getElementById('testMode');
+
+        if (modeSelect && data.mode) {
+            modeSelect.value = data.mode;
+        }
+
+    } catch (error) {
+        console.error('Error loading test statistics:', error);
+    }
+}
+
+
+async function changeTestMode() {
+    const mode = document.getElementById('testMode').value;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/test/mode`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                mode: mode
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Gagal mengubah mode');
+        }
+
+        document.getElementById('currentTestMode').textContent =
+            `Mode: ${data.mode}`;
+
+        alert(`✅ Mode pengujian diubah menjadi ${data.mode}`);
+
+    } catch (error) {
+        console.error('Error changing test mode:', error);
+        alert(`❌ ${error.message}`);
+    }
+}
+
+
+async function resetTestStats() {
+    if (!confirm('Reset seluruh statistik pengujian?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/api/test/reset`,
+            {
+                method: 'POST'
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Gagal reset statistik');
+        }
+
+        await loadTestStats();
+
+        alert('✅ Statistik pengujian berhasil di-reset');
+
+    } catch (error) {
+        console.error('Error resetting test statistics:', error);
+        alert(`❌ ${error.message}`);
+    }
+}
         
         // State management
         let streams = [];
@@ -761,7 +448,8 @@
                 loadStats(),
                 loadStreams(),
                 loadAlerts(),
-                updateConnectionStatus()
+                updateConnectionStatus(),
+                loadTestStats()
             ]);
             
             // Start auto-refresh
@@ -815,9 +503,6 @@
                 
                 // Update stats display
                 document.getElementById('totalDrivers').textContent = data.total_drivers || 0;
-                document.getElementById('alertsToday').textContent = data.alerts_today || 0;
-                document.getElementById('alertsWeek').textContent = data.alerts_week || 0;
-                document.getElementById('criticalToday').textContent = data.critical_today || 0;
                 
                 updateServerStatus('Connected', 'online');
                 
@@ -827,6 +512,7 @@
             }
         }
 
+        // Load and display camera streams
         // Load and display camera streams
         async function loadStreams() {
             try {
@@ -876,16 +562,33 @@
                             </div>
                         </div>
                         
-                        <div class="stream-info">
-                            <div class="info-row">
-                                <span class="info-label">Status</span>
-                                <div id="drowsy-status-${stream.esp32_id}" class="info-value">
-                                    ${stream.is_drowsy ? 
-                                        '<div class="drowsy-alert"><span class="drowsy-dot"></span>DROWSY DETECTED</div>' : 
-                                        '✅ AWAKE'}
+                        <div class="driver-monitor-panel">
+                            <div class="driver-monitor-title">Driver Monitoring Information</div>
+                            <div class="monitor-grid">
+                                <div class="monitor-item">
+                                    <span class="monitor-label">Driver</span>
+                                    <span class="monitor-value" id="driver-name-${stream.esp32_id}">${stream.driver_name || 'Unknown'}</span>
+                                </div>
+                                <div class="monitor-item">
+                                    <span class="monitor-label">Face Match</span>
+                                    <span class="monitor-value" id="face-match-${stream.esp32_id}">${typeof stream.match === 'number' ? stream.match.toFixed(2) : '0.00'}</span>
+                                </div>
+                                <div class="monitor-item">
+                                    <span class="monitor-label">Status</span>
+                                    <span class="monitor-value" id="driver-status-${stream.esp32_id}">${stream.status || (stream.is_drowsy ? 'DROWSY' : 'NORMAL')}</span>
+                                </div>
+                                <div class="monitor-item">
+                                    <span class="monitor-label">EAR</span>
+                                    <span class="monitor-value" id="ear-${stream.esp32_id}">0.00</span>
+                                </div>
+                                <div class="monitor-item">
+                                    <span class="monitor-label">MAR</span>
+                                    <span class="monitor-value" id="mar-${stream.esp32_id}">0.00</span>
                                 </div>
                             </div>
-                            
+                        </div>
+
+                        <div class="stream-info">
                             <div class="info-row">
                                 <span class="info-label">Frame Buffer</span>
                                 <span class="info-value" id="buffer-status-${stream.esp32_id}">
@@ -922,7 +625,7 @@
                         startStreamRefresh(stream.esp32_id);
                     }
                 });
-                
+
             } catch (error) {
                 console.error('Error loading streams:', error);
                 const container = document.getElementById('streamsContainer');
@@ -968,7 +671,8 @@
             }
         }
 
-        // Fetch stream status
+        // Fetch hasil identifikasi dan deteksi terbaru
+        // Fetch hasil identifikasi dan deteksi terbaru
         async function fetchStreamStatus(esp32Id) {
             try {
                 const response = await fetch(`${API_BASE_URL}/api/stream/status/${esp32Id}`);
@@ -976,32 +680,36 @@
                 
                 const status = await response.json();
                 
+                // Update parameter monitoring
+                const driverEl = document.getElementById(`driver-name-${esp32Id}`);
+                const matchEl = document.getElementById(`face-match-${esp32Id}`);
+                const statusEl = document.getElementById(`driver-status-${esp32Id}`);
+                const earEl = document.getElementById(`ear-${esp32Id}`);
+                const marEl = document.getElementById(`mar-${esp32Id}`);
+
+                if (driverEl) driverEl.textContent = status.driver_name || 'Unknown';
+                if (matchEl) matchEl.textContent = Number(status.match || 0).toFixed(2);
+                if (statusEl) {
+                    const label = status.status || (status.is_drowsy ? 'DROWSY' : 'NORMAL');
+                    statusEl.textContent = label;
+                    statusEl.className = 'monitor-value ' +
+                        (label === 'DROWSY' ? 'monitor-status-critical' :
+                         label === 'YAWNING' ? 'monitor-status-warning' : 'monitor-status-normal');
+                }
+                if (earEl) earEl.textContent = Number(status.ear || 0).toFixed(2);
+                if (marEl) marEl.textContent = Number(status.mar || 0).toFixed(2);  
+                
                 // Update buffer status
                 const bufferEl = document.getElementById(`buffer-status-${esp32Id}`);
-                if (bufferEl) {
-                    bufferEl.textContent = `${status.queue_size || 0} frames`;
-                }
+                if (bufferEl) bufferEl.textContent = `${status.queue_size || 0} frames`;
                 
-                // Update last update time
+                // Update last update
                 const updateEl = document.getElementById(`update-status-${esp32Id}`);
                 if (updateEl && status.last_update) {
                     updateEl.textContent = new Date(status.last_update).toLocaleTimeString();
                 }
                 
-                // Update drowsy status
-                const drowsyEl = document.getElementById(`drowsy-status-${esp32Id}`);
-                if (drowsyEl) {
-                    if (status.is_drowsy) {
-                        drowsyEl.innerHTML = '<div class="drowsy-alert"><span class="drowsy-dot"></span>DROWSY DETECTED</div>';
-                        
-                        // Show alert in alerts list
-                        showDrowsyAlert(esp32Id);
-                    } else {
-                        drowsyEl.innerHTML = '✅ AWAKE';
-                    }
-                }
-                
-                // Update stream image (force refresh)
+                // Update stream image
                 const img = document.getElementById(`stream-img-${esp32Id}`);
                 if (img) {
                     const currentSrc = img.src.split('?')[0];
@@ -1186,13 +894,9 @@
                 // Remove oldest alert if too many
                 const alerts = alertsList.querySelectorAll('.alert-item');
                 if (alerts.length > 20) {
-                    alerts[alerts.length - 1].remove();
-                }
-                
+                    alerts[alerts.length - 1].remove();}
                 // Apply filters to new alert
-                applyFilters();
-            }
-        }
+                applyFilters();}}
 
         // Update camera filter dropdown
         function updateCameraFilter(alerts) {
@@ -1200,22 +904,17 @@
             const cameras = new Set();
             
             alerts.forEach(alert => {
-                if (alert.esp32_id) {
-                    cameras.add(alert.esp32_id);
-                }
-            });
+                if (alert.esp32_id) {cameras.add(alert.esp32_id);}});
             
             // Keep existing "All Cameras" option, add new ones
             const currentValue = filter.value;
             const options = ['<option value="">All Cameras</option>'];
             
             Array.from(cameras).sort().forEach(camera => {
-                options.push(`<option value="${camera}">${camera}</option>`);
-            });
+                options.push(`<option value="${camera}">${camera}</option>`);});
             
             filter.innerHTML = options.join('');
-            filter.value = currentValue; // Restore selection
-        }
+            filter.value = currentValue;} // Restore selection
 
         // Apply filters
         function applyFilters() {
@@ -1225,13 +924,9 @@
             document.querySelectorAll('.alert-item').forEach(alert => {
                 const camera = alert.dataset.camera;
                 const type = alert.dataset.type;
-                
                 const cameraMatch = !cameraFilter || camera === cameraFilter;
                 const typeMatch = !typeFilter || type === typeFilter;
-                
-                alert.style.display = (cameraMatch && typeMatch) ? 'flex' : 'none';
-            });
-        }
+                alert.style.display = (cameraMatch && typeMatch) ? 'flex' : 'none';});}
 
         // Helper: Get time ago
         function getTimeAgo(date) {
@@ -1240,8 +935,7 @@
             if (seconds < 60) return 'just now';
             if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
             if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-            return `${Math.floor(seconds / 86400)} days ago`;
-        }
+            return `${Math.floor(seconds / 86400)} days ago`;}
 
         // Start auto-refresh
         function startAutoRefresh() {
@@ -1252,8 +946,7 @@
                     await Promise.all([
                         loadStats(),
                         loadAlerts(),
-                        updateConnectionStatus()
-                    ]);
+                        updateConnectionStatus()]);
                     
                     // Refresh status for active streams
                     activeStreams.forEach(esp32Id => {
@@ -1263,8 +956,7 @@
                 } catch (error) {
                     console.error('Auto-refresh error:', error);
                 }
-            }, REFRESH_INTERVAL);
-        }
+            }, REFRESH_INTERVAL);}
 
         // Initialize filters
         document.getElementById('cameraFilter').addEventListener('change', applyFilters);
